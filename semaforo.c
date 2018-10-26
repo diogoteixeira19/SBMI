@@ -39,7 +39,7 @@ ISR(INT0_vect)
 	{
 		state=17;
 	}
-		//PORTB = (PORTB & ~PORTB) | (1<<GNS) | (1<<REW)| (1<<GEW)| (1<<YEW)| (1<<RNS)| (1<<YNS);
+	//PORTB = (PORTB & ~PORTB) | (1<<GNS) | (1<<REW)| (1<<GEW)| (1<<YEW)| (1<<RNS)| (1<<YNS);
 }
 
 /********************************************************
@@ -77,7 +77,7 @@ void hw_init(void){
 int main(void)
 {
 
-  hw_init(); /*INICIALIZAÇÃO*/
+  hw_init(); /*INICIALIZAÃ‡ÃƒO*/
 
   //mili_timer T50, T5, T10;
   //init_mili_timers();
