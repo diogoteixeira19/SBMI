@@ -1,8 +1,11 @@
-/*
- * semaforo.c
+/* semaforo.c
  *
  *  Created on: 14/10/2018
  *      Author: Diogo Teixeira e Bernardo Moreira
+ */
+
+/*
+ * !COMPLETAR COMENTARIOS!
  */
 
 #include <avr/io.h>
@@ -28,7 +31,7 @@
 #define T1BOTTOM 65536-2500
 
 volatile unsigned char state=0, pstate=0;
-int t=0;
+volatile int t;
 
 /**************************************************
  * INTERRUPT
@@ -39,6 +42,7 @@ ISR(INT0_vect)
 	{
 		state=17;
 	}
+	//printf("interrupt");
 	//PORTB = (PORTB & ~PORTB) | (1<<GNS) | (1<<REW)| (1<<GEW)| (1<<YEW)| (1<<RNS)| (1<<YNS);
 }
 
@@ -81,7 +85,7 @@ int main(void)
 
   //mili_timer T50, T5, T10;
   //init_mili_timers();
-  tc1_init();
+  //tc1_init();
 
 
   while (1)
@@ -211,7 +215,7 @@ int main(void)
 			}
 			//estado 6
 			if( (state==17) && (pstate==6)){
-																//VERMELHO - VERMELHO
+									        	//VERMELHO - VERMELHO
 				//start_timer(&T10, mediumT);
 				t=mediumT;
 				tc1_init();
