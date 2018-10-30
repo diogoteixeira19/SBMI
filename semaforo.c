@@ -22,7 +22,7 @@
 
 #define EMR PD2
 
-#define bigT 500  // !!5000
+#define bigT 5000  
 #define smallT 500
 #define mediumT 1000
 
@@ -171,12 +171,12 @@ int main(void)
 				state=8;
 			}
 		   //estado 2
-			if( (state==17) && (pstate==2) ){		         //AMARELO - VERMELHO
+			if( (state==17) && (pstate==2) ){			//AMARELO - VERMELHO
 				state=9;
 				pstate=0;
 			}
 			if( (state==9) && (t==0)){
-				PORTB = ( PORTB ^ (1<<YNS) ) | (1<<RNS);	  //VERMELHO - VERMELHO
+				PORTB = ( PORTB ^ (1<<YNS) ) | (1<<RNS);	//VERMELHO - VERMELHO
 				t=mediumT;
 				tc1_init();
 				state=10;
@@ -203,12 +203,12 @@ int main(void)
 				state=13;
 			}
 		   //estado 5
-			if( (state==17) && (pstate==5)){		         //VERMELHO - AMARELO
+			if( (state==17) && (pstate==5)){			 //VERMELHO - AMARELO
 				state=14;
 				pstate=0;
 			}
 			if( (state==14) && (t==0)){
-				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);	 //VERMELHO - VERMELHO
+				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);	//VERMELHO - VERMELHO
 				t=mediumT;
 				tc1_init();
 				state=15;
