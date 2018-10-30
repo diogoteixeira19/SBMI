@@ -11,7 +11,6 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "timer_tools.h"
-//#include <serial.h> //write
 #include <avr/interrupt.h>
 
 #define RNS PB0
@@ -21,9 +20,9 @@
 #define YEW PB4
 #define GEW PB5
 
-#define EMR PD2  //PD7
+#define EMR PD2
 
-#define bigT 5000
+#define bigT 500  // !!5000
 #define smallT 500
 #define mediumT 1000
 
@@ -34,7 +33,11 @@ volatile unsigned char state=0, pstate=0;
 volatile int t;
 
 /**************************************************
- * INTERRUPT
+ * INTERRUPT is executed at falling edge button (EMERGENCIA)
+ **************************************************
+ * If state indicates normal function then INTERRUPT
+ * switches to EMERGENCIA, if already in EMERGENCIA
+ * does nothing
  ************************************************/
 ISR(INT0_vect)
 {
@@ -42,12 +45,13 @@ ISR(INT0_vect)
 	{
 		state=17;
 	}
-	//printf("interrupt");
-	//PORTB = (PORTB & ~PORTB) | (1<<GNS) | (1<<REW)| (1<<GEW)| (1<<YEW)| (1<<RNS)| (1<<YNS);
 }
 
 /********************************************************
  *  Timer 1 ISR is executed each 10ms
+ ********************************************************
+ *	Reload BOTTOM value
+ *  Decrement t
  ********************************************************/
 ISR(TIMER1_OVF_vect){
 	TCNT1 = T1BOTTOM; // reload TC1
@@ -55,7 +59,12 @@ ISR(TIMER1_OVF_vect){
 }
 
 /********************************************************
- * Timer 1 inicializacao em modo NORMAL
+ * Timer 1 -> NORMAL mode
+ *****************************************************
+ *  Stop TC1 and clear all pending interrupts
+ *  Define mode of operation & BOTTOM value
+ *  Set the required interrupt mask
+ *  Start timer with the proper prescaler
  ******************************************************/
 void tc1_init(void){
 	TCCR1B = 0; // Stop TC1
@@ -67,32 +76,37 @@ void tc1_init(void){
 
 }
 
-
-void hw_init(void){
+/********************************************************
+ * INICIALIZAÇÃO
+ *****************************************************
+ *  Define outputs
+ *  Define inputs
+ *  Set interrupts request at falling edge
+ *  Enables INT0
+ *  EIFR??
+ *  Enable global interrupt flag
+ ******************************************************/
+void init(void){
   DDRB = DDRB | 0b00111111; //DEFINIR OUTPUTS
   DDRD = DDRD | 0b00000000; //DEFINIR INPUT
-  //PORTD = PORTD | (1<<EMR); //RESISTENCIA PULL UP
   EICRA = EICRA | (2<<ISC00); /*Interrupts request at falling edge*/
   EIMSK = EIMSK | (1<<INT0);  /* Enables INT0 */
   EIFR= EIFR | (1<<INTF0);
   sei(); /* Enable global interrupt flag */
 }
 
+/********************************************************
+ * State machine in main
+ *******************************************************/
 int main(void)
 {
 
-  hw_init(); /*INICIALIZAÇÃO*/
-
-  //mili_timer T50, T5, T10;
-  //init_mili_timers();
-  //tc1_init();
-
+  init(); /*INICIALIZAÇÃO*/
 
   while (1)
   {
 			 if (state==0){
 				PORTB = (PORTB & ~PORTB) | (1<<GNS) | (1<<REW);  // VERDE  -   VERMELHO
-				//start_timer(&T50, bigT);
 				t=bigT;
 				tc1_init();
 				state=1;
@@ -100,7 +114,6 @@ int main(void)
 			}
 			if ((state==6 && (t==0) )  || ( state==13 && (t==0) ) || ( state==15 && (t==0) ) || ( state==16 && (t==0) )  ){
 				PORTB = (PORTB & ~PORTB) | (1<<GNS) | (1<<REW);  // VERDE  -   VERMELHO
-				//start_timer(&T50, bigT);
 				t=bigT;
 				tc1_init();
 				state=1;
@@ -108,7 +121,6 @@ int main(void)
 			}
 			if (state==1 && (t==0)){
 				PORTB = ( PORTB ^ (1<<GNS) ) | (1<<YNS);        // AMARELO -   VERMELHO
-				//start_timer(&T5, smallT);
 				t=smallT;
 				tc1_init();
 				state=2;
@@ -116,7 +128,6 @@ int main(void)
 			}
 			if( state==2 && (t==0) ){
 				PORTB = ( PORTB ^ (1<<YNS) ) | (1<<RNS);        // VERMELHO -  VERMELHO
-				//start_timer(&T5, smallT);
 				t=smallT;
 				tc1_init();
 				state=3;
@@ -124,7 +135,6 @@ int main(void)
 			}
 			if( (state==3 && (t==0) ) || (state==8 && (t==0)) || ( state==10 && (t==0)) || ( state==11 && (t==0))){
 				PORTB = ( PORTB ^ (1<<REW) ) | (1<<GEW);        // VERMELHO -  VERDE
-				//start_timer(&T50, bigT);
 				t=bigT;
 				tc1_init();
 				state=4;
@@ -132,7 +142,6 @@ int main(void)
 			}
 			if(state==4 && (t==0)){
 				PORTB = ( PORTB ^ (1<<GEW) ) | (1<<YEW);        // VERMELHO - AMARELO
-				//start_timer(&T5, smallT);
 				t=smallT;
 				tc1_init();
 				state=5;
@@ -140,7 +149,6 @@ int main(void)
 			}
 			if(state==5 && (t==0) ){
 				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);        // VERMELHO - VERMELHO
-				//start_timer(&T5, smallT);
 				t=smallT;
 				tc1_init();
 				state=6;
@@ -151,7 +159,6 @@ int main(void)
 			// estado 1
 			if( (state==17) && (pstate==1)){
 				PORTB = ( PORTB ^ (1<<GNS) ) | (1<<YNS);        // AMARELO - VERMELHO
-				//start_timer(&T5, smallT);
 				t=smallT;
 				tc1_init();
 				state=7;
@@ -159,28 +166,24 @@ int main(void)
 			}
 			if(state==7 && (t==0)){
 				PORTB = ( PORTB ^ (1<<YNS) ) | (1<<RNS);        //VERMELHO - VERMELHO
-				//start_timer(&T10, mediumT);
 				t=mediumT;
 				tc1_init();
 				state=8;
 			}
 		   //estado 2
-			if( (state==17) && (pstate==2) ){				    //AMARELO - VERMELHO
+			if( (state==17) && (pstate==2) ){		         //AMARELO - VERMELHO
 				state=9;
 				pstate=0;
 			}
 			if( (state==9) && (t==0)){
-				PORTB = ( PORTB ^ (1<<YNS) ) | (1<<RNS);		//VERMELHO - VERMELHO
-				//start_timer(&T10, mediumT);
+				PORTB = ( PORTB ^ (1<<YNS) ) | (1<<RNS);	  //VERMELHO - VERMELHO
 				t=mediumT;
 				tc1_init();
 				state=10;
 			}
 			//estado 3
 			if( (state==17) && (pstate==3)){
-																//VERMELHO - VERMELHO
-				//start_timer(&T10, mediumT);
-				t=mediumT;
+				t=mediumT;					//VERMELHO - VERMELHO
 				tc1_init();
 				state=11;
 				pstate=0;
@@ -188,7 +191,6 @@ int main(void)
 			// estado 4
 			if( (state==17) && (pstate==4)){
 				PORTB = ( PORTB ^ (1<<GEW) ) | (1<<YEW);        // VERMELHO - AMARELO
-				//start_timer(&T5, smallT);
 				t=smallT;
 				tc1_init();
 				state=12;
@@ -196,35 +198,29 @@ int main(void)
 			}
 			if(state==12 && (t==0)){
 				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);        //VERMELHO - VERMELHO
-				//start_timer(&T10, mediumT);
 				t=mediumT;
 				tc1_init();
 				state=13;
 			}
 		   //estado 5
-			if( (state==17) && (pstate==5)){				//VERMELHO - AMARELO
+			if( (state==17) && (pstate==5)){		         //VERMELHO - AMARELO
 				state=14;
 				pstate=0;
 			}
 			if( (state==14) && (t==0)){
-				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);		//VERMELHO - VERMELHO
-				//start_timer(&T10, mediumT);
+				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);	 //VERMELHO - VERMELHO
 				t=mediumT;
 				tc1_init();
 				state=15;
 			}
 			//estado 6
 			if( (state==17) && (pstate==6)){
-									        	//VERMELHO - VERMELHO
-				//start_timer(&T10, mediumT);
-				t=mediumT;
+				t=mediumT;					//VERMELHO - VERMELHO
 				tc1_init();
 				state=16;
 				pstate=0;
 			}
-
 	}
-
 
   return 1;
 }
