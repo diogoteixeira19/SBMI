@@ -1,23 +1,23 @@
 /********************************************************
  *  semaforo.c
- * 	Traffic lights with an emergence function (C)
+ * 	Traffic lights with an emergence function in C
  * 	Solution: state machine with an interrupt request and
- * 		  timer TC1
+ * 			 timer TC1
  ********************************************************
  *
- *  F=16MHz. To create a interrupt request every
- *  10ms we need to count 16M*10m=160000 clock periods.
- *  Combination of CP TP and CNT to find a solution to
+ * 	F=16MHz. To create a interrupt request every
+ * 	10ms we need to count 16M*10m=160000 clock periods.
+ * 	Combination of CP TP and CNT to find a solution to
  *  CPxTPxCNT=160000, CP=1
  *
- *  TP=1 -> CNT=160000, CNT too high
+ *	TP=1 -> CNT=160000, CNT too high
  *  TP=8 -> CNT=20000
  *  TP=32 -> CNT=5000, TC2 only, 16bit timer CNT>255
  *  TP=64 -> CNT=2500
  *  TP=128 -> CNT=1250, TC2 only, 16bit timer CNT>255
  *  TP=256 -> CNT=625
  *  TP=1024 -> CNT=156.1, timing error
- *  (3 possible combinations)
+ *	(3 possible combinations)
  *
  *  CP=1, TP=64, CNT=2500
  *
@@ -57,7 +57,7 @@
 #define T1BOTTOM 65536-2500
 
 volatile unsigned char state=0, pstate=0;
-volatile int t;
+volatile uint16_t t;
 
 /**************************************************
  * INTERRUPT is executed at falling edge button (EMERGENCIA)
@@ -114,8 +114,8 @@ void tc1_init(void){
  *  Clear interrupt requests
  ******************************************************/
 void init(void){
-  DDRB = DDRB | 0b00111111; //DEFINIR OUTPUTS
-  DDRD = DDRD | 0b00000000; //DEFINIR INPUT
+  DDRB = DDRB | (1<<RNS) | (1<<YNS) | (1<<GNS) | (1<<REW) | (1<<YEW) | (1<<GEW); //DEFINIR OUTPUTS
+  DDRD = DDRD | ~(1<<EMR); //DEFINIR INPUT
   EICRA = EICRA | (2<<ISC00); //Interrupts request at falling edge
   EIMSK = EIMSK | (1<<INT0);  // Enables INT0
   EIFR= EIFR | (1<<INTF0); // Clear
@@ -205,7 +205,7 @@ int main(void)
 				printf("\n estado %d -> VERMELHO - VERMELHO\n", state);
 				#endif
 			}
-	        	/******************************* - EMERGENCIA - ********************************/
+	        /******************************* - EMERGENCIA - ********************************/
 			// estado 17
 			// estado 1
 			if( (state==17) && (pstate==1)){
@@ -275,7 +275,7 @@ int main(void)
 				#endif
 			}
 		   //estado 5
-			if( (state==17) && (pstate==5)){			//VERMELHO - AMARELO
+			if( (state==17) && (pstate==5)){			 //VERMELHO - AMARELO
 				state=14;
 				pstate=0;
 				#ifdef DEBUG
@@ -283,7 +283,7 @@ int main(void)
 				#endif
 			}
 			if( (state==14) && (t==0)){
-				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);	//VERMELHO - VERMELHO
+				PORTB = ( PORTB ^ (1<<YEW) ) | (1<<REW);	 //VERMELHO - VERMELHO
 				t=mediumT;
 				tc1_init();
 				state=15;
